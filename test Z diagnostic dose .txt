@@ -1,0 +1,192 @@
+# Cabeçalho do Script: Análise de Sobrevivência de Insetos para Indicação de Resistência
+#
+# Este script R realiza uma análise estatística para identificar populações de insetos
+# que apresentam uma taxa de sobrevivência significativamente maior que 1% após
+# a exposição a diferentes moléculas (inseticidas). Uma sobrevivência acima deste
+# limiar é considerada um forte indicativo de potencial evolução de resistência.
+#
+# O script segue os seguintes passos:
+# 1. Preparação do Ambiente: Instala e carrega pacotes necessários, e define o diretório de trabalho.
+# 2. Carregamento e Tratamento dos Dados: Lê o arquivo de entrada e garante que os dados
+#    estejam no formato correto para análise.
+# 3. Definição dos Parâmetros do Teste Z: Configura o limiar de sobrevivência e o nível
+#    de significância para o teste estatístico.
+# 4. Função para o Teste Z: Define a lógica de cálculo do Teste Z para proporções.
+# 5. Execução da Análise: Aplica a função do Teste Z a cada linha dos seus dados.
+# 6. Visualização e Interpretação dos Resultados: Exibe os resultados finais e fornece
+#    um guia para entender o que cada coluna significa, especialmente a coluna
+#    'significativo'.
+#
+# Autor: Vitor Quintela 
+# Data: 18 de Junho de 2025
+
+# --- 1. Preparação do Ambiente e Carregamento dos Dados ---
+
+# 1.1. Carregar pacotes necessários
+# Se você ainda não tem esses pacotes instalados, descomente e execute as linhas abaixo:
+# install.packages("dplyr")  # Pacote para manipulação de dados
+# install.packages("readr")  # Pacote para leitura eficiente de dados
+# install.packages("tidyr")  # Pacote para organização e limpeza de dados
+
+library(dplyr)
+library(readr)
+library(tidyr)
+
+# 1.2. Definir o caminho do arquivo de dados
+# O arquivo 'freq.txt' deve estar no mesmo diretório de onde você executa este script.
+# Se estiver em outro local, substitua "freq.txt" pelo caminho completo do arquivo.
+caminho_arquivo <- "freq.txt"
+
+# 1.3. Ler os dados do arquivo .txt
+# 'delim = "\t"' indica que as colunas no seu arquivo são separadas por tabulações.
+# 'col_types = cols()' permite que o 'readr' infira automaticamente os tipos de coluna.
+dados_brutos <- read_delim(caminho_arquivo, delim = "\t", col_types = cols())
+
+# 1.4. Converter a coluna 'mortalidade' para o tipo numérico
+# Esta é uma etapa crucial. Operações matemáticas (como divisão) exigem dados numéricos.
+# Valores não numéricos nesta coluna serão convertidos para 'NA' (Not Available).
+dados_tratados <- dados_brutos %>%
+  mutate(mortalidade = as.numeric(mortalidade))
+
+# Pré-visualização dos dados após carregamento e tratamento inicial
+message("--- Pré-visualização dos dados após carregamento e tratamento ---")
+print(head(dados_tratados))
+message("----------------------------------------------------------------\n")
+
+
+# --- 2. Definição dos Parâmetros do Teste Estatístico ---
+
+# 2.1. Definir a proporção esperada de SOBREVIVÊNCIA (p0_sobrevivencia)
+# Esta é a proporção (em formato decimal) que serve como nosso limiar de interesse.
+# Estamos testando se a sobrevivência é significativamente maior que 1% (0.01).
+p0_sobrevivencia <- 0.01
+
+# 2.2. Definir o nível de significância (alfa)
+# O 'alfa' representa a probabilidade máxima de um erro Tipo I (falso positivo),
+# ou seja, de concluirmos que há resistência quando na verdade não há.
+# Um valor comum é 0.05 (equivalente a 5%).
+alfa <- 0.05
+
+# 2.3. Calcular o valor Z crítico para um teste unilateral à direita
+# Para um teste unilateral à direita, queremos saber o valor Z que deixa 'alfa'% da área
+# na cauda superior (direita) da distribuição normal padrão.
+# 'qnorm(1 - alfa)' retorna este valor (e.g., qnorm(0.95) para alfa=0.05 resulta em ~1.645).
+z_critico <- qnorm(1 - alfa)
+
+# Exibir os parâmetros que serão usados no Teste Z
+message("--- Parâmetros do Teste Z ---")
+message(paste("Proporção Esperada de Sobrevivência (p0):", p0_sobrevivencia * 100, "%"))
+message(paste("Nível de Significância (alfa):", alfa * 100, "%"))
+message(paste("Valor Z Crítico (teste unilateral à direita):", round(z_critico, 4)))
+message("-----------------------------\n")
+
+
+# --- 3. Função para Realizar o Teste Z de Sobrevivência ---
+
+# Esta função encapsula toda a lógica do cálculo do Teste Z para uma única observação (linha).
+# Recebe a mortalidade observada, o tamanho da amostra e os parâmetros do teste.
+teste_z_sobrevivencia <- function(mortalidade_obs, N_total,
+                                  p0_surv = p0_sobrevivencia,
+                                  z_crit = z_critico) {
+
+  # 3.1. Calcular a proporção de sobrevivência observada
+  # Converte a mortalidade em porcentagem para a proporção de sobrevivência (0 a 1).
+  # Exemplo: 90% mortalidade -> (100 - 90)/100 = 0.10 de sobrevivência.
+  p_obs_sobrevivencia <- (100 - mortalidade_obs) / 100
+
+  # 3.2. Calcular o erro padrão da proporção
+  # O erro padrão é a medida da variabilidade esperada da proporção amostral
+  # sob a hipótese nula (p0_surv).
+  # A pequena adição de '1e-9' ao denominador é para evitar divisão por zero
+  # caso 'N_total' seja muito pequeno ou zero, embora o filtro de NA ajude a mitigar isso.
+  erro_padrao <- sqrt((p0_surv * (1 - p0_surv)) / N_total)
+
+  # 3.3. Calcular a estatística Z
+  # O valor Z quantifica quantos desvios padrão a proporção de sobrevivência observada
+  # está distante da proporção esperada (nosso limiar de 1%).
+  z_calculado <- (p_obs_sobrevivencia - p0_surv) / erro_padrao
+
+  # 3.4. Determinar a significância estatística
+  # Para o nosso teste unilateral à direita, se 'z_calculado' for maior que 'z_critico',
+  # consideramos que a sobrevivência observada é estatisticamente MAIOR que o limiar de 1%.
+  resultado_significativo <- z_calculado > z_crit
+
+  # Retorna um data frame com os resultados calculados para esta linha/observação.
+  return(data.frame(
+    sobrevivencia_obs_perc = p_obs_sobrevivencia * 100, # Sobrevivência em % para fácil leitura
+    z_calculado = z_calculado,
+    z_critico = z_crit,
+    significativo = resultado_significativo
+  ))
+}
+
+
+# --- 4. Execução da Análise e Geração dos Resultados Finais ---
+
+# 4.1. Aplicar a função de teste a cada linha do conjunto de dados
+# 'filter(!is.na(mortalidade))': Remove quaisquer linhas com valores NA em 'mortalidade',
+# garantindo que apenas dados válidos sejam usados nos cálculos.
+# 'rowwise()': Transforma o dataframe de modo que as operações subsequentes (como 'mutate')
+# sejam aplicadas a cada linha individualmente.
+# 'mutate(teste_resultado = list(...))': Aplica a função 'teste_z_sobrevivencia' a cada linha.
+# Os resultados (um pequeno data frame por linha) são armazenados como uma lista na nova coluna 'teste_resultado'.
+# 'unnest(cols = c(teste_resultado))': "Expande" a coluna de lista 'teste_resultado' em
+# suas colunas individuais ('sobrevivencia_obs_perc', 'z_calculado', etc.),
+# anexando-as ao dataframe principal.
+# 'ungroup()': Remove o agrupamento por linha, retornando o dataframe ao seu estado normal.
+resultados_analise <- dados_tratados %>%
+  filter(!is.na(mortalidade)) %>%
+  rowwise() %>%
+  mutate(teste_resultado = list(teste_z_sobrevivencia(mortalidade, N))) %>%
+  unnest(cols = c(teste_resultado)) %>%
+  ungroup()
+
+# 4.2. Selecionar e visualizar as colunas mais relevantes dos resultados
+# Reordena e seleciona as colunas para uma apresentação clara e concisa.
+# 'n = Inf' garante que todas as linhas do resultado sejam impressas no console,
+# sem truncamento.
+message("--- Resultados Finais da Análise de Sobrevivência ---")
+print(
+  resultados_analise %>%
+    select(populacao, molecula, N, mortalidade, sobrevivencia_obs_perc, z_calculado, z_critico, significativo),
+  n = Inf
+)
+message("-----------------------------------------------------\n")
+
+
+# --- 5. Interpretação dos Resultados Finais (Guia Rápido) ---
+
+# Este bloco explica como interpretar as colunas mais importantes do resultado final.
+
+# - 'populacao', 'molecula', 'N', 'mortalidade': São seus dados de entrada originais.
+
+# - 'sobrevivencia_obs_perc': Representa a porcentagem de insetos que sobreviveram
+#   em cada teste (calculada a partir da mortalidade). Por exemplo, 10% de sobrevivência.
+
+# - 'z_calculado': É o valor da estatística Z calculado para a sobrevivência observada.
+#   Ele indica a "distância" estatística da sua sobrevivência observada em relação
+#   ao limiar de 1%. Valores positivos e grandes sugerem maior sobrevivência.
+
+# - 'z_critico': É o valor Z de corte para o seu teste (aproximadamente 1.645).
+#   Se o 'z_calculado' for maior que este valor, a sobrevivência é considerada significativa.
+
+# - 'significativo': Esta é a coluna chave para sua interpretação:
+#   - TRUE: Indica que o 'z_calculado' é MAIOR que o 'z_critico'. Isso significa que a
+#     proporção de sobrevivência observada é estatisticamente MAIOR que 1%.
+#     Essas populações (e moléculas) são fortes candidatas para investigações
+#     adicionais de **resistência**.
+#   - FALSE: Indica que o 'z_calculado' NÃO é maior que o 'z_critico' (pode ser menor
+#     ou negativo). Isso significa que a sobrevivência observada NÃO é estatisticamente
+#     maior que 1%. Neste caso, não há evidência estatística de resistência
+#     com base no seu limiar e nível de significância.
+
+# Ações recomendadas:
+# Foco nas linhas onde 'significativo' é TRUE. Estas são as populações
+# que apresentam uma sobrevivência preocupante e indicam potencial resistência.
+
+# (Opcional) Salvar os resultados em um arquivo CSV para análise posterior
+# Descomente a linha abaixo para gerar um arquivo CSV com todos os resultados detalhados.
+# O arquivo será salvo no mesmo diretório onde você executa este script.
+# write_csv(resultados_analise, "resultados_analise_sobrevivencia_completo.csv")
+
+message("Script finalizado. Verifique os resultados acima ou o arquivo CSV gerado (se ativado).")
