@@ -24,16 +24,25 @@ st.sidebar.write(f"- Valor Z Crítico: **{z_critico:.4f}**")
 
 # 3. Entrada de Dados (Tabela Editável)
 st.subheader("Entrada de Dados")
-st.info("💡 Cole seus dados do Excel diretamente na tabela abaixo. Adicione ou remova linhas conforme necessário.")
+st.info("💡 Você pode fazer o upload de um arquivo CSV ou colar os dados do Excel diretamente na tabela abaixo. O arquivo CSV deve conter as colunas: População, Molécula, N (Total) e Mortalidade (%).")
 
-# DataFrame padrão baseado na estrutura do seu script R
-dados_iniciais = pd.DataFrame({
-    "População": ["Pop1", "Pop1", "Pop2", "Pop2"],
-    "Molécula": ["Abamectina", "Abamectina", "Abamectina", "Abamectina"],
-    "N (Total)": [100, 100, 100, 100],
-    "Mortalidade (%)": [99.5, 95.0, 80.0, 99.0]
-})
+# --- NOVA PARTE: Botão de Upload de CSV ---
+arquivo_csv = st.file_uploader("Carregar arquivo CSV", type=["csv"])
 
+# Lógica condicional: Usa o CSV se existir, caso contrário, usa o padrão
+if arquivo_csv is not None:
+    # O Streamlit lê o arquivo CSV inserido pelo usuário
+    dados_iniciais = pd.read_csv(arquivo_csv)
+else:
+    # DataFrame padrão baseado na estrutura do seu script R
+    dados_iniciais = pd.DataFrame({
+        "População": ["Pop1", "Pop1", "Pop2", "Pop2"],
+        "Molécula": ["Abamectina", "Abamectina", "Abamectina", "Abamectina"],
+        "N (Total)": [100, 100, 100, 100],
+        "Mortalidade (%)": [99.5, 95.0, 80.0, 99.0]
+    })
+
+# A tabela editável continua funcionando da mesma forma, mas agora aceita a fonte de dados dinâmica
 df_editado = st.data_editor(dados_iniciais, num_rows="dynamic", use_container_width=True)
 
 # 4. Processamento e Cálculo
