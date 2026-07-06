@@ -97,3 +97,29 @@ if st.button("Executar Análise de Resistência", type="primary"):
             "Isso significa que a proporção de sobrevivência observada é **estatisticamente maior** que o limiar definido (ex: **1%**). "
             "Essas populações são fortes candidatas para investigações adicionais de resistência."
         )
+        # (O código anterior termina aqui, logo após o Guia de Interpretação)
+
+        # 6. Referências e Autoria
+        st.divider() # Adiciona uma linha horizontal para separar as seções
+        
+        col1, col2 = st.columns(2) # Divide o espaço final em duas colunas
+        
+        with col1:
+            st.markdown("### 📚 Referências Bibliográficas")
+            st.markdown("""
+            Os cálculos estatísticos e correções realizados neste aplicativo são baseados nas seguintes literaturas:
+            
+            * **Teste Z Unilateral (Dose Diagnóstica):** Roush, R. T., & Miller, G. L. (1986). Considerations for design of insecticide resistance monitoring programs. *Journal of Economic Entomology*, 79(2), 293-298.
+            * **Correção de Mortalidade:** Abbott, W. S. (1925). A method of computing the effectiveness of an insecticide. *Journal of Economic Entomology*, 18(2), 265-267.
+            """)
+            
+        with col2:
+            st.markdown("### 👨‍💻 Autoria e Manutenção")
+            st.info("""
+            **Desenvolvido e mantido por: Vitor Quintela**
+            
+            Este aplicativo foi criado para facilitar e padronizar a análise da evolução da resistência a inseticidas. 
+            """)
+            # Opcional: Você pode adicionar seu e-mail ou link para o Lattes/LinkedIn abaixo
+            st.markdown("📧 Contato: *seu.email@exemplo.com*")
+            st.markdown("🔗 [Meu LinkedIn/Lattes](https://link-para-seu-perfil.com)")
