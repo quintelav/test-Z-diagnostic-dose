@@ -121,5 +121,5 @@ if st.button("Executar Análise de Resistência", type="primary"):
             Este aplicativo foi criado para facilitar e padronizar a análise da evolução da resistência a inseticidas. 
             """)
             # Opcional: Você pode adicionar seu e-mail ou link para o Lattes/LinkedIn abaixo
-            st.markdown("📧 Contato: *seu.email@exemplo.com*")
-            st.markdown("🔗 [Meu LinkedIn/Lattes](https://link-para-seu-perfil.com)")
+            st.markdown("📧 Contato: *quintelav@gmail.com*")
+            st.markdown("🔗 [Meu LinkedIn https://www.linkedin.com/in/vitorquintelas/)")
