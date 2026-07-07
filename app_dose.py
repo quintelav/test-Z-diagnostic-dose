@@ -7,8 +7,8 @@ from datetime import datetime # NOVA IMPORTAÇÃO: Para capturar a data/hora atu
 
 # 1. Configuração da Página e Títulos
 st.set_page_config(page_title="Dose Diagnóstica - Sobrevivência", layout="wide")
-st.title("Teste Z Unilateral: Dose Diagnóstica (Sobrevivência)")
-st.write("Baseado na metodologia de Roush & Miller para avaliar se a taxa de sobrevivência é estatisticamente maior que a esperada.")
+st.title("ResistMIP: Bioestatística Aplicada ao Menejo de Resistência")
+st.write("Plataforma automatizada para análise de bioensaios e suporte à tomada de decisão no Manejo Integrado de Pragas.")
 
 # 2. Seção de Avisos, LGPD e Consentimento
 st.warning("""
